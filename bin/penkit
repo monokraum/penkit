@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# penkit — launcher: penkit install | init | audit. install.sh links it in ~/.local/bin/penkit.
+set -euo pipefail
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+exec python3 "$here/../scripts/penkit.py" "$@"

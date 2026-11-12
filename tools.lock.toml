@@ -1,0 +1,48 @@
+# penkit — pinned tool versions
+#
+# Single source of truth: "penkit install" installs these versions and "penkit audit"
+# refuses to run a tool that does not match.
+# Checksums collected and verified on 2026-11-11 (checksum files published by each
+# project, or the GitHub release digest when there is none).
+#
+# Changing a version: update version, commit and checksums together.
+#   commit: git ls-remote https://github.com/<org>/<repo> "refs/tags/vX.Y.Z*"
+#           (the ^{} line if there is one, otherwise the only line)
+
+[betterleaks]
+version = "1.9.0"
+commit = "81aff7a638638aae3a659845d089043e1d8fe9ac"
+repo = "https://github.com/betterleaks/betterleaks"
+url = "https://github.com/betterleaks/betterleaks/releases/download/v{version}/betterleaks_{version}_linux_{arch}.tar.gz"
+arch = { x86_64 = "x64", aarch64 = "arm64" }
+# archive checksum (checksums.txt of the release)
+archive_sha256 = { x86_64 = "f8b185a39ffcece2a1ca82bf3a4e7435cd81963ffd16b7a9128daf75f35f6de7", aarch64 = "1d39116e0a58dc94574715e2aa12a2dbd5062f193eee3fec011fef6ba06bd13b" }
+# checksum of the binary extracted from this archive
+binary_sha256 = { x86_64 = "0ace40b41652344608f89967fe93c6caf4faae9a4df20423632c7efb02a4d4e1" }
+
+[semgrep]
+version = "1.182.0"
+pipx_spec = "semgrep==1.182.0"
+
+[osv-scanner]
+version = "2.7.0"
+commit = "bfe2f84abd2f09fe0b83ba7f6dad40d296762f40"
+repo = "https://github.com/google/osv-scanner"
+url = "https://github.com/google/osv-scanner/releases/download/v{version}/osv-scanner_linux_{arch}"
+arch = { x86_64 = "amd64", aarch64 = "arm64" }
+binary_sha256 = { x86_64 = "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b", aarch64 = "4061ef4c021ed3c47f203b818f337e351336cc5cd67c0274fc36bd1dfc728dd7" }
+
+[noir]
+version = "1.4.0"
+commit = "8b8d1683ba7b70387c4abf9f34c8d7f0a74b6ba4"
+repo = "https://github.com/owasp-noir/noir"
+url = "https://github.com/owasp-noir/noir/releases/download/v{version}/noir-v{version}-linux-{arch}"
+arch = { x86_64 = "x86_64", aarch64 = "arm64" }
+# Noir publishes no checksum file: GitHub release digest
+binary_sha256 = { x86_64 = "620e774f240be91b975ca0b2f04a5df568f0612ef1f74d182a43a25daf402001", aarch64 = "17d6dd5be002fe49bc23189a1ec6788ec420eca3254cf6cca50817c8ffd2436a" }
+
+[zap]
+version = "2.17.0"
+image = "ghcr.io/zaproxy/zaproxy"
+# a digest identifies the exact content of the image: it cannot be moved
+digest = "sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af"
