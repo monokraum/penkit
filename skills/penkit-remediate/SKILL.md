@@ -82,6 +82,6 @@ This skill is a link to the penkit repository, created by `penkit init`: do not 
 
    Then give the path of `remediation.json`.
 
-8. **Next.** If the list has at least one item of kind `change`, offer in one sentence to run `/penkit-fix` to apply them: all of them, or only the numbers the user gives (`/penkit-fix 1,3`). Run it only if the user agrees. Otherwise, stop there.
+8. **Next.** If the list has at least one item of kind `change`, offer in one sentence to run `/penkit-fix` to apply them on a dedicated branch, with one commit per item and a merge request: all of them, or only the numbers the user gives (`/penkit-fix 1,3`). Run it only if the user agrees. Otherwise, stop there.
 
 The reports and `remediation.json` are in the project's `penkit/reports/<date>/`, ignored by git: never suggest committing them, they describe the app's vulnerabilities.
