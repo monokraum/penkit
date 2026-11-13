@@ -2,7 +2,7 @@
 """penkit — security audit of a web app with betterleaks, semgrep, osv-scanner and Noir + ZAP.
 
     penkit.py install [--fix]       install / verify the tools (run again after changing tools.lock.toml)
-    penkit.py init    [--url URL]   prepare the project: .penkit.toml, .gitignore, penkit-audit skill link
+    penkit.py init    [--url URL]   prepare the project: .penkit.toml, .gitignore, links to the penkit skills
     penkit.py audit   [--only a,b]  run the scans and build the HTML report
 
 The audited project is the git repository of the current directory.
@@ -39,8 +39,8 @@ LOCK_FILE = ROOT / "tools.lock.toml"
 PENKIT_DIR = "penkit"                 # penkit outputs in the audited project (ignored by git)
 CONFIG_NAME = ".penkit.toml"
 BIN_DIR = Path.home() / ".local" / "bin"
-SKILL_NAME = "penkit-audit"
-SKILL_SRC = ROOT / "skills" / SKILL_NAME
+SKILL_NAME = "penkit-audit"                       # entry point, named in the "Ready" message
+SKILL_NAMES = (SKILL_NAME, "penkit-remediate")   # skills linked into the project by penkit init
 TOOL_IDS = ["betterleaks", "semgrep", "osv-scanner", "noir-zap"]
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
@@ -367,11 +367,12 @@ timeout_minutes = 60
 
 # Scan outputs (penkit/wrk/, penkit/reports/): never read back by the tools, never committed.
 PENKIT_OUTPUTS = (f"{PENKIT_DIR}/",)
-SKILL_LINK = f".claude/skills/{SKILL_NAME}"
-# (path tested with git check-ignore, pattern added to .gitignore). The skill link is a
+SKILL_LINKS = {name: f".claude/skills/{name}" for name in SKILL_NAMES}
+# (path tested with git check-ignore, pattern added to .gitignore). A skill link is a
 # file for git: no trailing "/", otherwise the pattern would only match a directory.
-GITIGNORE_ENTRIES = ((f"{PENKIT_DIR}/probe", f"/{PENKIT_DIR}/"), (SKILL_LINK, f"/{SKILL_LINK}"))
-GITIGNORE_COMMENT = "# penkit: reports (vulnerabilities, routes, requests) and local link to the penkit-audit skill"
+GITIGNORE_ENTRIES = ((f"{PENKIT_DIR}/probe", f"/{PENKIT_DIR}/"),
+                     *((link, f"/{link}") for link in SKILL_LINKS.values()))
+GITIGNORE_COMMENT = "# penkit: reports (vulnerabilities, routes, requests) and local links to the penkit skills"
 
 
 def penkit_dir(project: Path) -> Path:
@@ -411,7 +412,7 @@ def penkit_ignored(project: Path) -> bool:
 
 
 def ensure_gitignored(project: Path) -> list[str]:
-    """Add penkit/ and the skill link to the project's .gitignore, unless they are already ignored.
+    """Add penkit/ and the skill links to the project's .gitignore, unless they are already ignored.
 
     Returns the messages to print; a line starting with ✘ reports a failure.
     """
@@ -449,8 +450,12 @@ def _ensure_link(link: Path, target: Path) -> str:
     return f"{link} → {target} (created)"
 
 
-def ensure_skill_link(project: Path) -> str:
-    return _ensure_link(project / SKILL_LINK, SKILL_SRC)
+def skill_src(name: str) -> Path:
+    return ROOT / "skills" / name
+
+
+def ensure_skill_links(project: Path) -> list[str]:
+    return [_ensure_link(project / link, skill_src(name)) for name, link in SKILL_LINKS.items()]
 
 
 def write_default_config(project: Path, url: str) -> Path:
@@ -598,15 +603,16 @@ def cmd_init(args) -> int:
             if m.startswith("✘"):
                 git_errs.append(m)
         if not git_errs:
-            say(f"  git         : {PENKIT_DIR}/ and {SKILL_LINK} ignored; {CONFIG_NAME} to commit")
+            say(f"  git         : {PENKIT_DIR}/ and the skill links ignored; {CONFIG_NAME} to commit")
     ok, why = app_reachable(cfg["app"]["url"])
     say(f"  app reachable: {'yes (' + why + ')' if ok else 'no (' + why + ') — start it before penkit audit'}")
 
-    say("\n3. Claude Code skill")
-    link = ensure_skill_link(project)
-    say(f"  {link}" if link.startswith("✘") else f"  skill       : {link}")
+    say("\n3. Claude Code skills")
+    links = ensure_skill_links(project)
+    for link in links:
+        say(f"  {link}" if link.startswith("✘") else f"  skill       : {link}")
 
-    ready = all(c.ok for c in checks) and not errs and not git_errs and not link.startswith("✘")
+    ready = all(c.ok for c in checks) and not errs and not git_errs and not any(m.startswith("✘") for m in links)
     say("\n" + (f"✔ Ready: in Claude Code, /{SKILL_NAME} or \"run the security audit\"" if ready
                  else "✘ Not ready: fix the points above"))
     return 0 if ready else 1
@@ -1060,6 +1066,7 @@ def cmd_audit(args) -> int:
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
     report.build(run_dir)
     say(f"\nReport: {run_dir / 'index.html'}")
+    say(f"Link: {(run_dir / 'index.html').resolve().as_uri()}")
     return 1 if any(r["status"] == "error" for r in results) else 0
 
 
@@ -1069,7 +1076,7 @@ def main() -> int:
     p = sub.add_parser("install", help="install / verify the tools at their pinned versions")
     p.add_argument("--fix", action="store_true", help="also replace different versions (in ~/.local/bin)")
     p.set_defaults(fn=cmd_install)
-    p = sub.add_parser("init", help="prepare the project: .penkit.toml, .gitignore, penkit-audit skill link")
+    p = sub.add_parser("init", help="prepare the project: .penkit.toml, .gitignore, links to the penkit skills")
     p.add_argument("--url", help="address of the app (only when creating .penkit.toml)")
     p.set_defaults(fn=cmd_init)
     p = sub.add_parser("audit", help="run the 4 scans and build the HTML report")

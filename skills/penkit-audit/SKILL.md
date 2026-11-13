@@ -5,7 +5,6 @@ argument-hint: "[--only betterleaks,semgrep,osv-scanner,noir-zap]"
 allowed-tools:
   - Bash(penkit audit)
   - Bash(penkit audit *)
-  - Bash(xdg-open *)
 ---
 
 # penkit audit
@@ -36,8 +35,10 @@ This skill is a link to the penkit repository, created by `penkit init`: do not 
    - the overall verdict in one sentence (number of findings by severity, tools that failed or did not run);
    - one line per tool: its status and its summary;
    - the 3 to 5 most severe findings, if any, with their location;
-   - the full path of `index.html`, and offer to open it (`xdg-open <path>`).
+   - the link to the report, copied as-is from the `Link:` line of the output (a `file://` URL), alone on its line so that it opens in one click in the browser. Do not rebuild it by hand.
 
    Do not interpret a finding beyond what it says: a Semgrep or ZAP finding is something to examine, not a confirmed vulnerability. The reports are in the project's `penkit/reports/<date>/`, ignored by git: never suggest committing them, they describe the app's vulnerabilities.
 
-4. **Next.** If the user wants to fix things, start from the details in the tool's report (`tools/<tool>.html`, or the native ZAP / OSV-Scanner report) and run `penkit audit` again after the fix.
+4. **Next.**
+   - If the audit found nothing other than Info findings: stop there.
+   - Otherwise, offer in one sentence to run `/penkit-remediate`: it reads the code behind each finding and proposes the changes to make in the project, ranked by severity, without applying them. Run it only if the user agrees.

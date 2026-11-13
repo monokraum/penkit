@@ -101,7 +101,7 @@ class PenkitDirTest(unittest.TestCase):
         (self.p / ".gitignore").write_text("node_modules/")        # no trailing newline
         penkit.ensure_gitignored(self.p)
         self.assertEqual(self.gitignore(), f"node_modules/\n\n{penkit.GITIGNORE_COMMENT}\n/penkit/\n"
-                                           "/.claude/skills/penkit-audit\n")
+                                           "/.claude/skills/penkit-audit\n/.claude/skills/penkit-remediate\n")
 
     def test_existing_patterns_are_enough(self):
         (self.p / ".gitignore").write_text("penkit/\n.claude\n")
@@ -111,26 +111,35 @@ class PenkitDirTest(unittest.TestCase):
     def test_only_missing_entry_added(self):
         (self.p / ".gitignore").write_text("/penkit/\n")
         penkit.ensure_gitignored(self.p)
-        self.assertEqual(self.gitignore(), f"/penkit/\n\n{penkit.GITIGNORE_COMMENT}\n/.claude/skills/penkit-audit\n")
+        self.assertEqual(self.gitignore(), f"/penkit/\n\n{penkit.GITIGNORE_COMMENT}\n/.claude/skills/penkit-audit\n"
+                                           "/.claude/skills/penkit-remediate\n")
 
-    def test_skill_link_created_ignored_and_idempotent(self):
-        msg = penkit.ensure_skill_link(self.p)
-        link = self.p / ".claude/skills/penkit-audit"
-        self.assertTrue(msg.endswith("(created)"), msg)
-        self.assertEqual(link.resolve(), penkit.SKILL_SRC.resolve())
-        self.assertTrue((link / "SKILL.md").is_file())
-        self.assertNotIn(".claude/skills/penkit-audit", penkit.tracked_files(self.p))
-        self.assertNotIn("created", penkit.ensure_skill_link(self.p))
+    def test_new_skill_link_added_to_older_gitignore(self):
+        (self.p / ".gitignore").write_text("/penkit/\n/.claude/skills/penkit-audit\n")
+        penkit.ensure_gitignored(self.p)
+        self.assertEqual(self.gitignore(), "/penkit/\n/.claude/skills/penkit-audit\n\n"
+                                           f"{penkit.GITIGNORE_COMMENT}\n/.claude/skills/penkit-remediate\n")
+
+    def test_skill_links_created_ignored_and_idempotent(self):
+        msgs = penkit.ensure_skill_links(self.p)
+        self.assertEqual(len(msgs), 2)
+        for name, msg in zip(("penkit-audit", "penkit-remediate"), msgs):
+            link = self.p / ".claude/skills" / name
+            self.assertTrue(msg.endswith("(created)"), msg)
+            self.assertEqual(link.resolve(), penkit.skill_src(name).resolve())
+            self.assertTrue((link / "SKILL.md").is_file())
+            self.assertNotIn(f".claude/skills/{name}", penkit.tracked_files(self.p))
+        self.assertFalse([m for m in penkit.ensure_skill_links(self.p) if "created" in m])
 
     def test_skill_link_fixed_but_real_folder_untouched(self):
         link = self.p / ".claude/skills/penkit-audit"
         link.parent.mkdir(parents=True)
         link.symlink_to(self.p / "old-penkit")
-        self.assertIn("fixed", penkit.ensure_skill_link(self.p))
-        self.assertEqual(link.resolve(), penkit.SKILL_SRC.resolve())
+        self.assertIn("fixed", penkit.ensure_skill_links(self.p)[0])
+        self.assertEqual(link.resolve(), penkit.skill_src("penkit-audit").resolve())
         link.unlink()
         link.mkdir()
-        self.assertTrue(penkit.ensure_skill_link(self.p).startswith("✘"))
+        self.assertTrue(penkit.ensure_skill_links(self.p)[0].startswith("✘"))
         self.assertTrue(link.is_dir() and not link.is_symlink())
 
     def test_earlier_negation_cannot_reinclude(self):
