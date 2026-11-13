@@ -9,12 +9,11 @@ allowed-tools:
   - Bash(ls penkit/reports*)
   - Write(penkit/reports/**/remediation.json)
   - Bash(python3 -m json.tool penkit/reports/*)
-  - Bash(penkit audit --only *)
 ---
 
 # penkit remediate
 
-Turns the findings of a penkit audit into a list of changes to make in the project, ranked by severity, presented in the chat and saved in `remediation.json` next to the report, for a coding agent that will implement them. The audit says what is wrong; your role is to say what to change, where and why, after reading the code. You **propose**: you do not change any project file until the user picks the changes to apply. Answer in the user's language.
+Turns the findings of a penkit audit into a list of changes to make in the project, ranked by severity, presented in the chat and saved in `remediation.json` next to the report, for a coding agent that will implement them (`/penkit-fix`, or another one). The audit says what is wrong; your role is to say what to change, where and why, after reading the code. You **propose**: you do not change any project file, `/penkit-fix` applies the changes. Answer in the user's language.
 
 This skill is a link to the penkit repository, created by `penkit init`: do not edit it from the project.
 
@@ -81,8 +80,8 @@ This skill is a link to the penkit repository, created by `penkit init`: do not 
    - a short before/after extract when it makes the change clearer;
    - the risk of regression, if any (major upgrade, behavior change for the users).
 
-   Then give the path of `remediation.json`, and ask the user which items to apply, here or by giving the file to a coding agent.
+   Then give the path of `remediation.json`.
 
-8. **Apply** (only the items the user picked). Make the changes. Do not run, without asking first, a command that installs or upgrades packages, or that rewrites the git history. Then run `penkit audit --only <tools concerned>` again (in the background, as for the audit: ZAP runs an active scan of the app in `.penkit.toml`, which must still be running on a local or staging instance) and say which findings disappeared and which remain.
+8. **Next.** If the list has at least one item of kind `change`, offer in one sentence to run `/penkit-fix` to apply them: all of them, or only the numbers the user gives (`/penkit-fix 1,3`). Run it only if the user agrees. Otherwise, stop there.
 
 The reports and `remediation.json` are in the project's `penkit/reports/<date>/`, ignored by git: never suggest committing them, they describe the app's vulnerabilities.

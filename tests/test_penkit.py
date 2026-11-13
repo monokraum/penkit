@@ -101,7 +101,8 @@ class PenkitDirTest(unittest.TestCase):
         (self.p / ".gitignore").write_text("node_modules/")        # no trailing newline
         penkit.ensure_gitignored(self.p)
         self.assertEqual(self.gitignore(), f"node_modules/\n\n{penkit.GITIGNORE_COMMENT}\n/penkit/\n"
-                                           "/.claude/skills/penkit-audit\n/.claude/skills/penkit-remediate\n")
+                                           "/.claude/skills/penkit-audit\n/.claude/skills/penkit-remediate\n"
+                                           "/.claude/skills/penkit-fix\n")
 
     def test_existing_patterns_are_enough(self):
         (self.p / ".gitignore").write_text("penkit/\n.claude\n")
@@ -112,18 +113,19 @@ class PenkitDirTest(unittest.TestCase):
         (self.p / ".gitignore").write_text("/penkit/\n")
         penkit.ensure_gitignored(self.p)
         self.assertEqual(self.gitignore(), f"/penkit/\n\n{penkit.GITIGNORE_COMMENT}\n/.claude/skills/penkit-audit\n"
-                                           "/.claude/skills/penkit-remediate\n")
+                                           "/.claude/skills/penkit-remediate\n/.claude/skills/penkit-fix\n")
 
     def test_new_skill_link_added_to_older_gitignore(self):
         (self.p / ".gitignore").write_text("/penkit/\n/.claude/skills/penkit-audit\n")
         penkit.ensure_gitignored(self.p)
         self.assertEqual(self.gitignore(), "/penkit/\n/.claude/skills/penkit-audit\n\n"
-                                           f"{penkit.GITIGNORE_COMMENT}\n/.claude/skills/penkit-remediate\n")
+                                           f"{penkit.GITIGNORE_COMMENT}\n/.claude/skills/penkit-remediate\n"
+                                           "/.claude/skills/penkit-fix\n")
 
     def test_skill_links_created_ignored_and_idempotent(self):
         msgs = penkit.ensure_skill_links(self.p)
-        self.assertEqual(len(msgs), 2)
-        for name, msg in zip(("penkit-audit", "penkit-remediate"), msgs):
+        self.assertEqual(len(msgs), 3)
+        for name, msg in zip(("penkit-audit", "penkit-remediate", "penkit-fix"), msgs):
             link = self.p / ".claude/skills" / name
             self.assertTrue(msg.endswith("(created)"), msg)
             self.assertEqual(link.resolve(), penkit.skill_src(name).resolve())

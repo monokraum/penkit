@@ -28,11 +28,13 @@ Requirements: Linux x86_64 or arm64, Python 3.11+, git, Docker, pipx, `~/.local/
    penkit init
    ```
 
-   It asks for the address of the running app, creates `.penkit.toml`, adds the report folder to `.gitignore` and links the `penkit-audit` and `penkit-remediate` skills into the project. In a project prepared with an earlier version of penkit, run it again to add the `penkit-remediate` link.
+   It asks for the address of the running app, creates `.penkit.toml`, adds the report folder to `.gitignore` and links the `penkit-audit`, `penkit-remediate` and `penkit-fix` skills into the project. In a project prepared with an earlier version of penkit, run it again to add the missing links.
 
 3. **Run the audit** in Claude Code, from the project: `/penkit-audit`, or simply ask "run the security audit". Claude has the ZAP target confirmed, runs the four tools, summarizes the results and gives the link to the report.
 
-4. **Address the findings**: if the audit found something, Claude offers to run `/penkit-remediate`. It reads the code behind each finding and proposes the changes to make in the project (code, dependencies, configuration), ranked by severity, with the probable false positives set apart. The list is also saved in `penkit/reports/<date>/remediation.json` (ignored by git like the report), numbered like in the chat, so that a coding agent can implement the changes. Nothing is changed until you pick the items to apply, in the same conversation or by giving the file to a coding agent; the changes are then checked by running the tools concerned again.
+4. **Address the findings**: if the audit found something, Claude offers to run `/penkit-remediate`. It reads the code behind each finding and proposes the changes to make in the project (code, dependencies, configuration), ranked by severity, with the probable false positives set apart. The list is also saved in `penkit/reports/<date>/remediation.json` (ignored by git like the report), numbered like in the chat, so that a coding agent can implement the changes. Nothing is changed in the project at this step.
+
+5. **Apply the fixes**: at the end of `/penkit-remediate`, Claude offers to run `/penkit-fix`, for all the proposed changes or only some of them (`/penkit-fix 1,3`). It applies them to the current code, asks before running any command that installs or upgrades packages, and runs neither the project's tests nor a new audit: run `/penkit-audit` again to check (after restarting the app, for ZAP). It leaves to you what no agent should do (revoking a leaked secret, purging the git history) and does not commit: review the changes with `git diff`. You can also give `remediation.json` to another coding agent.
 
 > ⚠️ ZAP runs an **active scan** (real payloads: creations, updates, injections). Only on a local or staging instance with a database that can be recreated, never in production. penkit refuses a non-local URL unless `allow_remote = true`.
 
