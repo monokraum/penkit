@@ -1066,7 +1066,6 @@ def cmd_audit(args) -> int:
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
     report.build(run_dir)
     say(f"\nReport: {run_dir / 'index.html'}")
-    say(f"Link: {(run_dir / 'index.html').resolve().as_uri()}")
     return 1 if any(r["status"] == "error" for r in results) else 0
 
 
